@@ -35,21 +35,24 @@ def detect_shell() -> str:
         return os.environ.get("SHELL", "/bin/sh")
 
     # Git Bash — prefer bin/bash.exe (full PATH) over usr/bin/bash.exe
-    git_bash_candidates = [
-        r"C:\Program Files\Git\bin\bash.exe",
-        r"C:\Program Files (x86)\Git\bin\bash.exe",
-        r"C:\Program Files\Git\usr\bin\bash.exe",
+    # Use PROGRAMFILES env var for non-standard install locations
+    program_dirs = [
+        os.environ.get("PROGRAMFILES", r"C:\Program Files"),
+        os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"),
     ]
-    for candidate in git_bash_candidates:
-        if os.path.isfile(candidate):
-            logger.info(f"Detected shell: {candidate}")
-            return candidate
+    for pdir in program_dirs:
+        for subpath in [r"Git\bin\bash.exe", r"Git\usr\bin\bash.exe"]:
+            candidate = os.path.join(pdir, subpath)
+            if os.path.isfile(candidate):
+                logger.info(f"Detected shell: {candidate}")
+                return candidate
 
     # bash on PATH (e.g. WSL, MSYS2)
-    bash_path = shutil.which("bash")
-    if bash_path:
-        logger.info(f"Detected shell: {bash_path}")
-        return bash_path
+    for name in ["bash.exe", "bash"]:
+        bash_path = shutil.which(name)
+        if bash_path:
+            logger.info(f"Detected shell: {bash_path}")
+            return bash_path
 
     # PowerShell 7+
     pwsh_path = shutil.which("pwsh")
@@ -127,7 +130,9 @@ class ShellSession:
             # Write command + sentinel echo to stdin
             # The sentinel echo lets us detect when the command finishes
             # We also echo the exit code before the sentinel
-            cmd_line = f"{command}\necho $?:{sentinel}\n"
+            # The trailing `: _` resets bash's $_ variable to "_" so the
+            # sentinel string doesn't leak into the next command via $_ expansion
+            cmd_line = f"{command}\necho $?:{sentinel}\n: _\n"
             self.process.stdin.write(cmd_line.encode())
             await self.process.stdin.drain()
 
