@@ -119,10 +119,39 @@ class ShellSession:
 
         logger.info(f"Shell session '{self.session_id}' started (PID {self.process.pid})")
 
+    @staticmethod
+    def _fix_powershell_quoting(command: str) -> str:
+        """Auto-fix PowerShell commands to use single quotes around -Command.
+
+        Bash expands $ variables in double-quoted strings, which breaks
+        PowerShell's $_ and other PS variables. This detects patterns like:
+            powershell.exe -Command "... $_ ..."
+        and rewrites to:
+            powershell.exe -Command '... $_ ...'
+        with internal single quotes escaped as '\\''
+        """
+        import re
+
+        # Match powershell/pwsh with -Command followed by a double-quoted string
+        # that contains $ (indicating PS variables that bash would expand)
+        pattern = r'((?:powershell(?:\.exe)?|pwsh(?:\.exe)?)\s+(?:-\w+\s+)*-[Cc]ommand\s+)"((?:[^"\\]|\\.)*\$(?:[^"\\]|\\.)*)"'
+
+        def replace_quotes(m):
+            prefix = m.group(1)
+            inner = m.group(2)
+            # Escape any single quotes inside the command
+            inner = inner.replace("'", "'\\''")
+            return f"{prefix}'{inner}'"
+
+        return re.sub(pattern, replace_quotes, command)
+
     async def execute(self, command: str, timeout_ms: int = 30000) -> dict[str, Any]:
         """Execute a command and return its full output."""
         if not self.process or self.process.returncode is not None:
             return {"status": "error", "error": "Shell session is not running"}
+
+        # Auto-fix PowerShell quoting to prevent bash $ expansion
+        command = self._fix_powershell_quoting(command)
 
         async with self._lock:
             sentinel = f"{_SENTINEL_PREFIX}{uuid.uuid4().hex[:8]}"
