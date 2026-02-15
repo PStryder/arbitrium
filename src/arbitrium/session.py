@@ -130,9 +130,15 @@ class ShellSession:
             # Write command + sentinel echo to stdin
             # The sentinel echo lets us detect when the command finishes
             # We also echo the exit code before the sentinel
-            # The trailing `: _` resets bash's $_ variable to "_" so the
-            # sentinel string doesn't leak into the next command via $_ expansion
-            cmd_line = f"{command}\necho $?:{sentinel}\n: _\n"
+            #
+            # Problem: bash sets $_ to the last arg of the previous command.
+            # After our sentinel echo, $_ contains the sentinel string, which
+            # leaks into the next command if it uses $_.
+            #
+            # Fix: `: _` on its own line before the command resets $_ to "_".
+            # Bash parses each line separately, so by the time it parses the
+            # user's command, $_ is already clean. Same after the sentinel.
+            cmd_line = f": _\n{command}\necho $?:{sentinel}\n: _\n"
             self.process.stdin.write(cmd_line.encode())
             await self.process.stdin.drain()
 
