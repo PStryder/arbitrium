@@ -3,6 +3,8 @@
 import asyncio
 import logging
 import os
+import shutil
+import sys
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,18 +19,67 @@ _SENTINEL_PREFIX = "__ARBITRIUM_DONE_"
 LOGS_DIR = Path(__file__).parent.parent.parent / "logs"
 
 
+def detect_shell() -> str:
+    """Auto-detect the best available shell for the current platform.
+
+    On Windows, probes in order of preference:
+      1. Git Bash (bin/bash.exe — has full PATH with ls, git, etc.)
+      2. Git Bash (usr/bin/bash.exe — works but minimal PATH)
+      3. PowerShell 7+ (pwsh)
+      4. PowerShell 5 (powershell)
+      5. cmd.exe (always available)
+
+    On Unix, uses $SHELL or falls back to /bin/sh.
+    """
+    if sys.platform != "win32":
+        return os.environ.get("SHELL", "/bin/sh")
+
+    # Git Bash — prefer bin/bash.exe (full PATH) over usr/bin/bash.exe
+    git_bash_candidates = [
+        r"C:\Program Files\Git\bin\bash.exe",
+        r"C:\Program Files (x86)\Git\bin\bash.exe",
+        r"C:\Program Files\Git\usr\bin\bash.exe",
+    ]
+    for candidate in git_bash_candidates:
+        if os.path.isfile(candidate):
+            logger.info(f"Detected shell: {candidate}")
+            return candidate
+
+    # bash on PATH (e.g. WSL, MSYS2)
+    bash_path = shutil.which("bash")
+    if bash_path:
+        logger.info(f"Detected shell: {bash_path}")
+        return bash_path
+
+    # PowerShell 7+
+    pwsh_path = shutil.which("pwsh")
+    if pwsh_path:
+        logger.info(f"Detected shell: {pwsh_path}")
+        return pwsh_path
+
+    # PowerShell 5 (ships with Windows)
+    ps_path = shutil.which("powershell")
+    if ps_path:
+        logger.info(f"Detected shell: {ps_path}")
+        return ps_path
+
+    # cmd.exe — always available
+    logger.info("Detected shell: cmd.exe (fallback)")
+    return "cmd.exe"
+
+
 class ShellSession:
     """A persistent shell subprocess with stdin/stdout pipes."""
 
     def __init__(
         self,
         session_id: str,
-        shell: str = "bash",
+        shell: str | None = None,
         cwd: str | None = None,
         env: dict[str, str] | None = None,
     ):
         self.session_id = session_id
-        self.shell = shell
+        self.shell = shell or detect_shell()
         self.cwd = cwd or os.getcwd()
         self.env = env
         self.process: asyncio.subprocess.Process | None = None

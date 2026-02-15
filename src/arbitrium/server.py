@@ -134,7 +134,7 @@ async def _handle_spawn(args: dict) -> list[TextContent]:
     import uuid
 
     session_id = args.get("session_id") or f"shell-{uuid.uuid4().hex[:6]}"
-    shell = args.get("shell", "bash")
+    shell = args.get("shell")  # None triggers auto-detect
     cwd = args.get("cwd")
 
     if session_id in _sessions:
