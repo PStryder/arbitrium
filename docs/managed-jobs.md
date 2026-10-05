@@ -1,7 +1,7 @@
 # Durable managed jobs: first milestone
 
 This milestone adds a local Python API alongside the existing four session MCP
-tools. Managed jobs and producer events currently target Windows only. It does not register tasks, install services, enable persistent access,
+tools. Managed jobs and producer events require Windows 10 or newer. It does not register tasks, install services, enable persistent access,
 configure another product, or expose a new remote execution tool. No production
 approval provider or approved production templates ship with it. The scheduled
 CLI entry point always refuses execution (exit code 3), before opening any files.
@@ -28,7 +28,8 @@ deadline, optional reviewed asset paths and relative result paths. Shell scripts
 batch files and common shell executables are rejected. Interpreters require a
 reviewed fixed program; never offer a free-form code/command input slot.
 
-`Registry(root).save(template, values)` creates an immutable UUID job. The saved
+`Registry(root).save(template, values)` saves an immutable UUID job. Re-saving an
+identical digest/specification returns the existing job ID. The saved
 spec includes resolved argument values, cwd and environment reference, never an
 environment dump. Do not place secrets in argument choices, paths or template IDs.
 The template digest covers its definition, executable bytes and listed asset
@@ -46,16 +47,28 @@ from an event. Test callbacks approve only harmless temporary fixture programs.
 Environment values are held in memory, never persisted, logged or emitted. Supply
 needed OS variables explicitly; the parent process environment is not copied.
 
-The runner executes an argv array with `shell=False`. Standard input is closed and
-stdout/stderr go to the null device. The registry is the structured lifecycle log;
+The runner executes an explicit executable and Windows-quoted argv without a shell.
+Standard input and stdout/stderr use the null device. The registry is the structured lifecycle log;
 raw application output capture is deliberately unavailable pending an approved
 logging/redaction policy. Applications can write reviewed results to their own
 working directory; configured result references appear only after exit zero.
 References do not promise that a result exists, is safe to read, or contains no
-secrets. Consumers must not automatically open them. Managed execution currently
-supports reviewed programs that do not spawn descendants. There is no Windows Job
-Object tree containment yet; completion/cancellation describe the owned root
-process only. Production approval must wait for any required containment work.
+secrets. Consumers must not automatically open them.
+
+Native Windows Job Objects contain the process group. `CreateProcessW` uses
+`PROC_THREAD_ATTRIBUTE_JOB_LIST` to assign containment atomically before user code
+runs. Unsupported or denied containment fails launch; there is no uncontained
+fallback. The unnamed Job Object handle is non-inheritable, uses KILL_ON_JOB_CLOSE
+and permits no breakaway. Ordinary descendants remain in the group. Completion
+waits for root exit and an empty group. Cancellation/deadline/shutdown terminate
+the group and confirm it is empty. Abrupt worker death closes its job handle,
+causing Windows to terminate the group. Reported exit_code is the root's; the
+reviewed program must aggregate child failures itself.
+
+This is lifecycle containment, not a hostile-code sandbox. Templates must not
+delegate execution through WMI, services, brokers or external launch mechanisms.
+See Microsoft's [Job Objects documentation](https://learn.microsoft.com/en-us/windows/win32/procthread/job-objects)
+and [process creation attributes](https://learn.microsoft.com/en-us/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute).
 
 ## Runs, cancellation and recovery
 
@@ -63,29 +76,32 @@ Each attempt gets a UUID run ID and owner UUID. SQLite WAL with FULL synchronous
 mode stores status, created/started/finished timestamps, exit code, diagnostic PID,
 30-second owner lease, cancellation request and per-run sequence. Status and its
 outbox event commit in the same transaction. Only one queued, running or unknown
-run is admitted per saved job, including across registry connections.
+run is admitted per template ID/working-directory scope, including across registry
+connections, revised templates and pre-existing duplicate saved-job rows. Renaming
+a template to bypass this hold is not an authorized recovery procedure.
 
 | Status | Meaning |
 | --- | --- |
 | queued | Reserved attempt, before launch intent |
 | running | Launch intent committed; process may be starting or running |
-| completed | Owned root process exit zero observed |
+| completed | Owned root exit zero observed and contained group empty |
 | failed | Nonzero exit, launch failure or confirmed deadline termination |
-| canceled | Approval denied, prelaunch cancellation, or owned root termination confirmed after a cancellation request |
-| interrupted | Queued lease expired, or live worker stopped and root termination confirmed |
+| canceled | Approval denied, prelaunch cancellation, or contained group termination confirmed after a cancellation request |
+| interrupted | Queued lease expired, or live worker stopped and contained group termination confirmed |
 | unknown | Running lease expired or termination could not be confirmed |
 
 `registry.cancel(run_id)` persists intent. The owning worker polls and confirms
-termination using its retained `Popen` object, which retains a Windows process
-handle. No PID read from disk is ever killed or adopted. `runner.stop()` requests
+termination using retained native process and Job Object handles.
+No PID read from disk is ever killed or adopted. `runner.stop()` requests
 worker shutdown; it is not a force-kill of another worker. The completion-versus-
-cancellation race resolves to the observed root exit if it has already happened.
+cancellation race resolves to observed completion only once the group is empty.
 
 `registry.recover()` leaves fresh leases alone. Expired queued attempts become
 interrupted; expired running attempts become unknown. It does not inspect, resume,
 kill or relaunch processes. A lease expiry can reflect a crash, reboot, blocked
-worker or clock change; it is not proof of process death. Nothing here claims a
-process survives reboot. Unknown blocks resubmission of the same job. This milestone
+worker or clock change; it proves neither process death nor absence of completed
+side effects. Nothing here claims a process survives reboot. Unknown blocks
+resubmission within its template ID/working-directory scope. This milestone
 has no automatic unknown-resolution API: an operator must investigate ownership
 and side effects before approving a new job or a future reconciliation facility.
 For unknown, finished_at is the time observation ended, not proof of process exit.
@@ -94,6 +110,10 @@ For unknown, finished_at is the time observation ended, not proof of process exi
 
 Machine-readable shape: [job-events-v1.schema.json](job-events-v1.schema.json).
 Canonical synthetic fixture: [job-event-v1.example.json](job-event-v1.example.json).
+Shared validation cases: [job-event-v1.cases.json](job-event-v1.cases.json).
+The [35 consumer-origin cases](job-event-v1.shared-cases.json) are also retained;
+their UTC +00:00 case is explicitly corrected to accepted under the clarified
+contract. The original consumer workspace file is unchanged.
 Its IDs and path are illustrative; it is documentation, not a published event.
 The entire UTF-8 JSON event must be at most 16 KiB. Reject unknown versions and
 extra fields. UUID strings are lowercase canonical UUIDs. `source` is `arbitrium`;
@@ -101,7 +121,8 @@ extra fields. UUID strings are lowercase canonical UUIDs. `source` is `arbitrium
 producer with the same instance identity.
 
 Each event contains `event_id`, `job_id`, `run_id`, `status`, `observed_at` (UTC
-RFC3339 ending Z), and `sequence` (positive 32-bit integer, increasing per run;
+RFC3339 ending Z or +00:00, with at most six fractional digits; output uses Z),
+and `sequence` (positive 32-bit integer, increasing per run;
 this milestone emits at most three events per run). Context contains only
 `template_id` (80-character identifier), fixed `reason_code` and nullable integer
 `exit_code`. There is no arbitrary prose, command, payload or environment field.
@@ -111,11 +132,14 @@ Runtime validation additionally enforces local absolute
 paths and the total serialized byte limit. `log_refs` names the SQLite registry;
 use run_id to identify its lifecycle row. SQLite is live storage, not a text log.
 
-The Expergis parser accepts a wider compatible input subset: UTC +00:00 as well as
-Z, sequence 0 through 2^63-1, optional context fields, and identifiers up to 128
-characters including colon. This producer always emits Z, sequences starting at
-one, all three context fields and identifiers of at most 80 characters without
-colon. No consumer change is needed for these narrower canonical producer values.
+Canonical constraints require all three context fields; identifiers use
+`[A-Za-z0-9_.-]{1,80}`; UUIDs are lowercase canonical strings; sequence is
+1 through 2147483647. Status/reason combinations are encoded in schema `allOf`;
+completed requires exit_code exactly zero. The consumer should align its broader
+initial parser to these constraints. JSON Schema validation must enable date-time
+format checking. Strict JSON decoding must separately reject duplicate keys and
+non-integer numeric representations for integer fields; the 16 KiB UTF-8 wire
+limit is also enforced outside JSON Schema.
 
 Normal lifecycle is queued → running → terminal (three events). Prelaunch denial
 or interruption produces queued → terminal (two). `observed_at` is observation
@@ -183,9 +207,40 @@ and [Exec action](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasks
 
 ## Deployment gates
 
+### What works now and the minimum next milestone
+
+With a reviewed in-memory template mapping and fixture-only approval/environment
+callbacks, the local API already runs a saved harmless job through containment,
+durable status, cancellation/recovery, outbox publication to an approved temporary
+inbox and disabled task-definition generation. Tests exercise this complete local
+path, including abrupt worker death and descendant termination. There is no
+automatic execution retry. Exactly-once external side effects are not promised.
+
+Real scheduled execution still needs a trusted persistent template catalog and
+environment resolver, a production action-time approval provider, and CLI wiring
+to those components. The minimum provider should consume an expiring single-use
+grant bound to the exact job ID, template digest, principal and scheduled occurrence
+in a durable transaction. Absence, replay or mismatch must deny execution. Test
+the complete scheduled entry point with temporary catalogs/grants before enabling
+any real command. No arbitrary template/module path or general approval flag should
+be exposed through the CLI. Task registration remains disabled in this milestone.
+
+Metadata-only logging is a usable safe default and needs no output-capture policy
+decision now. Capturing application stdout/stderr later requires a separately
+reviewed bounded logging/redaction policy for that actual job. Unknown-run holds
+remain permanent until a future explicit reconciliation action records operator
+evidence and authorizes a fresh linked attempt; it must preserve the old unknown
+observation rather than invent a successful completion. No hold is silently lifted.
+
+The next user decisions are the exact real template/inputs, account, schedule and
+required result/output handling. Installation, configured paths/permissions,
+publication, task registration/enablement and actual execution each still require
+the applicable exact operational approval. More isolated implementation and tests
+do not require another permission request.
+
 Before operational use, obtain exact approval for reviewed templates and assets,
 environment-reference resolution, execution approval provider, runtime installation,
-registry/log permissions, output policy, descendant containment if needed, inbox
+registry/log permissions, output policy, platform containment compatibility, inbox
 publication destination, and each task registration/enablement. Validate the final
 task with Windows after approval. Verify paths in Peter's ordinary terminal; a
 worker-visible AppData path may be packaged-app redirected. Coordinate the consumer

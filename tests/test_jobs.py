@@ -38,7 +38,10 @@ def runner(registry, template, authorize=lambda job, run: True):
 
 def events(registry):
     with registry.connection() as db:
-        return [json.loads(row[0]) for row in db.execute("SELECT body FROM outbox ORDER BY created_at,event_id")]
+        observed = [json.loads(row[0]) for row in db.execute("SELECT body FROM outbox")]
+    # Wall-clock observations can tie or arrive out of order. The contract's
+    # run sequence, never a timestamp/random UUID tie-break, defines lifecycle order.
+    return sorted(observed, key=lambda event: (event["run_id"], event["sequence"]))
 
 
 @pytest.mark.parametrize("argument,status,code", [("ok", "completed", 0), ("fail", "failed", 7)])
@@ -65,7 +68,7 @@ def test_durable_lifecycle_and_no_secret_output(setup_job, argument, status, cod
 def test_default_execution_and_cli_are_disabled(setup_job, tmp_path):
     registry, template = setup_job
     job_id = registry.save(template, ["ok"])
-    with patch("subprocess.Popen") as spawn:
+    with patch("arbitrium.jobs.OwnedProcess") as spawn:
         with pytest.raises(PermissionError):
             Runner(registry, {template.template_id: template}).execute(job_id)
         assert main(["run", "--registry", str(tmp_path / "must-not-exist"), "--job-id", job_id]) == 3
@@ -77,7 +80,7 @@ def test_default_execution_and_cli_are_disabled(setup_job, tmp_path):
 def test_approval_denial_prevents_spawn(setup_job):
     registry, template = setup_job
     job_id = registry.save(template, ["ok"])
-    with patch("subprocess.Popen") as spawn:
+    with patch("arbitrium.jobs.OwnedProcess") as spawn:
         result = runner(registry, template, authorize=lambda job, run: False).execute(job_id)
         spawn.assert_not_called()
     assert result["status"] == "canceled"
@@ -129,7 +132,7 @@ def test_recovery_never_signals_saved_pid_or_assumes_reboot_survival(setup_job):
     assert registry.recover() == []  # live lease is left alone
     with registry.connection() as db:
         db.execute("UPDATE runs SET lease_until=0 WHERE run_id=?", (run_id,))
-    with patch("os.kill") as kill, patch("subprocess.Popen") as spawn:
+    with patch("os.kill") as kill, patch("arbitrium.jobs.OwnedProcess") as spawn:
         assert Registry(registry.root).recover() == [run_id]
         kill.assert_not_called()
         spawn.assert_not_called()
@@ -160,7 +163,7 @@ def test_argument_template_and_asset_changes_rejected(setup_job):
         registry.save(dataclasses.replace(template, result_paths=("../escape",)), ["ok"])
     job_id = registry.save(template, ["ok"])
     Path(template.assets[0]).write_text("raise SystemExit(0)")
-    with patch("subprocess.Popen") as spawn:
+    with patch("arbitrium.jobs.OwnedProcess") as spawn:
         with pytest.raises(ValueError, match="Template changed"):
             runner(registry, template).execute(job_id)
         spawn.assert_not_called()
@@ -213,7 +216,7 @@ def test_publish_denied_collision_and_retention_bound(setup_job, tmp_path):
     with pytest.raises(RuntimeError, match="collision"):
         Publisher(registry, inbox, lambda p: True).publish()
     assert target.read_text() == "conflicting-data"
-    # Inbox retention is consumer-owned; delivered ledger alone is bounded.
+    # Inbox retention needs separate approval; only the producer ledger is pruned.
     with registry.connection() as db:
         for _ in range(1010):
             db.execute("INSERT INTO outbox VALUES (?,?,?,?)", (str(uuid.uuid4()), "{}", "2000-01-01T00:00:00Z", "2000-01-01T00:00:00Z"))
@@ -230,7 +233,7 @@ def test_outbox_backpressure_and_concurrent_admission(setup_job):
     job_id = registry.save(template, ["ok"])
     registry.reserve(job_id, str(uuid.uuid4()))
     with pytest.raises(RuntimeError, match="capacity"):
-        registry.reserve(registry.save(template, ["ok"]), str(uuid.uuid4()))
+        registry.reserve(registry.save(dataclasses.replace(template, template_id="other-fixture"), ["ok"]), str(uuid.uuid4()))
     registry.max_pending = 10000
     with pytest.raises(sqlite3.IntegrityError):
         registry.reserve(job_id, str(uuid.uuid4()))
@@ -254,7 +257,7 @@ def test_scheduler_xml_is_disabled_bound_to_job_and_never_registered(setup_job):
     job_id = registry.save(template, ["ok"])
     definition = TaskDefinition(job_id, sys.executable, template.cwd, "2030-01-01T12:00:00+00:00", "S-1-5-21-111-222-333-1001")
     scheduler = WindowsTaskScheduler(registry, {template.template_id: template})
-    with patch("subprocess.Popen") as spawn:
+    with patch("arbitrium.jobs.OwnedProcess") as spawn:
         report = scheduler.dry_run(definition)
         assert report["registered"] is False and report["execution_available"] is False
         assert "LeastPrivilege" in report["xml"] and "InteractiveToken" in report["xml"]
@@ -295,3 +298,29 @@ def test_unsafe_consumer_references_rejected(reference):
     event["log_refs"] = [reference]
     with pytest.raises(ValueError):
         validate_event(event)
+
+
+@pytest.mark.parametrize("filename", ["job-event-v1.cases.json", "job-event-v1.shared-cases.json"])
+def test_contract_cases_match_runtime_and_json_schema(filename):
+    from jsonschema import Draft202012Validator, FormatChecker
+    from datetime import datetime
+    docs = Path(__file__).resolve().parents[1] / "docs"
+    schema = json.loads((docs / "job-events-v1.schema.json").read_text())
+    Draft202012Validator.check_schema(schema)
+    checker = FormatChecker()
+    # jsonschema's optional RFC3339 package is not installed in every runtime.
+    # Keep calendar validation active; the schema supplies the strict UTC syntax.
+    @checker.checks("date-time", raises=(ValueError, TypeError))
+    def date_time(value):
+        return isinstance(value, str) and datetime.fromisoformat(value.replace("Z", "+00:00")).tzinfo is not None
+    validator = Draft202012Validator(schema, format_checker=checker)
+    cases = json.loads((docs / filename).read_text())
+    for case in cases:
+        expected = case.get("valid", case.get("expected"))
+        try:
+            validate_event(case["event"])
+            accepted = True
+        except (TypeError, ValueError):
+            accepted = False
+        assert accepted == expected, case["name"]
+        assert validator.is_valid(case["event"]) == expected, case["name"]

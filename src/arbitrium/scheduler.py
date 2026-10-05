@@ -36,6 +36,8 @@ class WindowsTaskScheduler:
         template = self.templates[job["template_id"]]
         if template.digest() != job["template_digest"]:
             raise ValueError("Saved job template no longer approved")
+        if template.spec(job["spec"]["values"]) != job["spec"]:
+            raise ValueError("Saved job does not match approved template")
         for path in (definition.python_executable, definition.working_directory, str(self.registry.root)):
             bounded(path, 260)
             if not Path(path).is_absolute() or "%" in path:

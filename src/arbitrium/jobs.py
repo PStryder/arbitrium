@@ -20,8 +20,12 @@ from datetime import datetime, timezone
 from pathlib import Path, PureWindowsPath
 from typing import Callable
 
+from .winjob import OwnedProcess
+
 TERMINAL = {"completed", "failed", "canceled", "interrupted", "unknown"}
 STATUSES = {"queued", "running"} | TERMINAL
+TIMESTAMP_PATTERN = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(?:\.[0-9]{1,6})?(?:Z|\+00:00)(?![\s\S])"
+REFERENCE_PATTERN = r"^[A-Za-z]:[\\/](?!\.\.(?:[\\/]|$))(?!.*[\\/]\.\.(?:[\\/]|$))[^:\x00-\x1f]*(?![\s\S])"
 REASONS = {"queued", "started", "exit_zero", "exit_nonzero", "cancel_requested",
            "deadline", "launch_failed", "worker_stopped", "ownership_lost",
            "lease_expired", "approval_denied"}
@@ -63,6 +67,8 @@ def bounded(value: str, limit=1024) -> str:
 def local_reference(value: str) -> str:
     """Lexical contract validation; never open or resolve an event reference."""
     bounded(value)
+    if not re.fullmatch(REFERENCE_PATTERN, value):
+        raise ValueError("Invalid absolute local Windows reference")
     path = PureWindowsPath(value)
     if not re.fullmatch(r"[A-Za-z]:", path.drive) or not path.root:
         raise ValueError("Absolute local Windows reference required")
@@ -121,7 +127,7 @@ class Template:
         if len(self.assets) > 16:
             raise ValueError("Too many reviewed assets")
         for asset in self.assets:
-            bounded(asset)
+            local_reference(asset)
             if not Path(asset).is_absolute() or not Path(asset).is_file():
                 raise ValueError("Reviewed asset must be an existing absolute file")
 
@@ -134,7 +140,8 @@ class Template:
                 for chunk in iter(lambda: stream.read(65536), b""):
                     digest.update(chunk)
             hashes[path] = digest.hexdigest()
-        return hashlib.sha256(canonical({"template": asdict(self), "file_hashes": hashes}).encode()).hexdigest()
+        resolved = {path: os.path.normcase(str(Path(path).resolve())) for path in (self.executable, self.cwd, *self.assets)}
+        return hashlib.sha256(canonical({"template": asdict(self), "file_hashes": hashes, "resolved_paths": resolved}).encode()).hexdigest()
 
     def arguments(self, values):
         if not isinstance(values, (tuple, list)) or len(values) != len(self.choices):
@@ -142,6 +149,11 @@ class Template:
         if any(not isinstance(v, str) or v not in allowed for v, allowed in zip(values, self.choices)):
             raise ValueError("Argument not approved by template")
         return [*self.fixed_args, *values]
+
+    def spec(self, values):
+        return {"executable": str(Path(self.executable).resolve()), "arguments": self.arguments(values),
+                "values": list(values), "cwd": str(Path(self.cwd).resolve()), "env_ref": self.env_ref,
+                "timeout_seconds": self.timeout_seconds, "result_paths": list(self.result_paths)}
 
 
 class Registry:
@@ -193,12 +205,15 @@ class Registry:
 
     def save(self, template: Template, values=()) -> str:
         digest = template.digest()
-        arguments = template.arguments(values)
-        spec = {"executable": template.executable, "arguments": arguments, "values": list(values),
-                "cwd": template.cwd, "env_ref": template.env_ref, "timeout_seconds": template.timeout_seconds,
-                "result_paths": list(template.result_paths)}
+        spec = template.spec(values)
         job_id = str(uuid.uuid4())
         with self.connection() as db:
+            db.execute("BEGIN IMMEDIATE")
+            # Re-saving the identical immutable specification is idempotent; a
+            # new UUID must not bypass the active/unknown-run exclusion.
+            existing = db.execute("SELECT job_id FROM jobs WHERE template_digest=? AND spec=? ORDER BY created_at LIMIT 1", (digest, canonical(spec))).fetchone()
+            if existing:
+                return existing[0]
             db.execute("INSERT INTO jobs VALUES (?,?,?,?,?)", (job_id, template.template_id, digest, canonical(spec), utcnow()))
         return job_id
 
@@ -249,6 +264,14 @@ class Registry:
         run_id = str(uuid.uuid4())
         with self.connection() as db:
             db.execute("BEGIN IMMEDIATE")
+            # Also cover pre-idempotency duplicate rows and edited template
+            # versions: unresolved execution blocks this template/cwd scope.
+            requested = db.execute("SELECT * FROM jobs WHERE job_id=?", (job_id,)).fetchone()
+            requested_cwd = os.path.normcase(json.loads(requested['spec'])['cwd'])
+            active_specs = db.execute("""SELECT prior.spec FROM runs r JOIN jobs prior ON r.job_id=prior.job_id
+                WHERE r.status IN ('queued','running','unknown') AND prior.template_id=?""", (requested['template_id'],)).fetchall()
+            if any(os.path.normcase(json.loads(row['spec'])['cwd']) == requested_cwd for row in active_specs):
+                raise sqlite3.IntegrityError("An active or unknown run blocks this template and working directory")
             pending = db.execute("SELECT count(*) FROM outbox WHERE delivered_at IS NULL").fetchone()[0]
             active = db.execute("SELECT count(*) FROM runs WHERE status IN ('queued','running')").fetchone()[0]
             if pending + active * 3 + 3 > self.max_pending:
@@ -309,8 +332,10 @@ def validate_event(event):
     if event["status"] not in STATUSES or type(event["sequence"]) is not int or not 1 <= event["sequence"] < 2**31:
         raise ValueError("Invalid lifecycle event")
     bounded(event["observed_at"], 32)
+    if not re.fullmatch(TIMESTAMP_PATTERN, event["observed_at"]):
+        raise ValueError("RFC3339 UTC with at most six fractional digits required")
     observed = datetime.fromisoformat(event["observed_at"].replace("Z", "+00:00"))
-    if not event["observed_at"].endswith("Z") or observed.utcoffset().total_seconds() != 0:
+    if observed.utcoffset().total_seconds() != 0:
         raise ValueError("UTC timestamp required")
     context = event["context"]
     if not isinstance(context, dict) or set(context) != {"template_id", "reason_code", "exit_code"} or context["reason_code"] not in STATUS_REASONS[event["status"]]:
@@ -386,9 +411,8 @@ class Runner:
     """Synchronous local worker. No approval implementation ships in this milestone.
 
     Embedders must approve the exact immutable job and run at action time. Tests
-    inject a fixture-only approver. The worker retains its Popen object (Windows
-    process handle); persisted PID values are diagnostic only, never kill targets.
-    Approved templates must not create descendants: tree containment is deferred.
+    inject a fixture-only approver. A native Windows Job Object owns the process
+    group; persisted PID values are diagnostic only, never kill targets.
     """
     def __init__(self, registry: Registry, templates: dict[str, Template], *, authorize=None, resolve_environment=None):
         self.registry = registry
@@ -406,9 +430,7 @@ class Runner:
         template = self.templates[job["template_id"]]
         if template.digest() != job["template_digest"]:
             raise ValueError("Template changed; save and approve a new job")
-        expected = {"executable": template.executable, "arguments": template.arguments(job["spec"]["values"]),
-                    "values": job["spec"]["values"], "cwd": template.cwd, "env_ref": template.env_ref,
-                    "timeout_seconds": template.timeout_seconds, "result_paths": list(template.result_paths)}
+        expected = template.spec(job["spec"]["values"])
         if job["spec"] != expected:
             raise ValueError("Saved job does not match template")
         if self.authorize is None or self.resolve_environment is None:
@@ -435,13 +457,11 @@ class Runner:
                 return self.registry.run(run_id)
             # Record intent BEFORE spawning; a crash in this window is unknown.
             self.registry.transition(run_id, self.owner_id, "running", "started")
-            process = subprocess.Popen([template.executable, *expected["arguments"]], cwd=template.cwd,
-                                       env=dict(env), shell=False, stdin=subprocess.DEVNULL,
-                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            process = OwnedProcess([expected["executable"], *expected["arguments"]], cwd=expected["cwd"], env=dict(env))
             with self.registry.connection() as db:
                 db.execute("UPDATE runs SET pid=? WHERE run_id=? AND owner_id=? AND status='running'", (process.pid, run_id, self.owner_id))
             deadline = time.monotonic() + template.timeout_seconds
-            while process.poll() is None:
+            while process.poll() is None or process.active_count():
                 row = self.registry.run(run_id)
                 if row["status"] != "running":
                     process.kill()
@@ -463,7 +483,7 @@ class Runner:
             if process is not None:
                 status, reason = "interrupted", "worker_stopped"
                 try:
-                    if process.poll() is None:
+                    if process.poll() is None or process.active_count():
                         process.kill()
                     process.wait(timeout=5)
                 except (OSError, subprocess.TimeoutExpired):
@@ -472,4 +492,7 @@ class Runner:
             if row["status"] in {"queued", "running"}:
                 self.registry.transition(run_id, self.owner_id, status, reason)
             raise
+        finally:
+            if process is not None:
+                process.close()
         return self.registry.run(run_id)

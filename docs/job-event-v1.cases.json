@@ -1,0 +1,578 @@
+[
+  {
+    "name": "canonical",
+    "valid": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "utc-offset-six-digits",
+    "valid": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00.123456+00:00",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "seven-fractional-digits",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00.1234567Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "non-utc",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00+01:00",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "invalid-calendar",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-02-30T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "space-instead-of-T",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05 12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "completed-nonzero",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 1
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "completed-null",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": null
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "wrong-status-reason",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "deadline",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "missing-context-key",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "fixture",
+        "reason_code": "exit_zero"
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "zero-sequence",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 0,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "max-sequence",
+    "valid": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 2147483647,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "too-large-sequence",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 2147483648,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "bool-sequence",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": true,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "uppercase-uuid",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "ABCDEFAB-ABCD-4ABC-8ABC-ABCDEFABCDEF",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "colon-identifier",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "fixture:v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "long-identifier",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "reference-relative",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "file.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "reference-unc",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "\\\\server\\share\\file"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "reference-device",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "\\\\?\\C:\\file"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "reference-traversal",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\folder\\..\\file"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "reference-stream",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\file:secret"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "reference-newline",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\file\n"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "extra-field",
+    "valid": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "00000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "00000000-0000-4000-8000-000000000002",
+      "job_id": "00000000-0000-4000-8000-000000000003",
+      "run_id": "00000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-fixture-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"
+      ],
+      "result_refs": [],
+      "instruction": "must not execute"
+    }
+  }
+]

@@ -1,0 +1,848 @@
+[
+  {
+    "name": "queued_queued",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "queued",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "queued",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "running_started",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "running",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "started",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "completed_exit_zero",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "failed_exit_nonzero",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "failed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_nonzero",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "failed_deadline",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "failed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "deadline",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "failed_launch_failed",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "failed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "launch_failed",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "canceled_cancel_requested",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "canceled",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "cancel_requested",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "canceled_approval_denied",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "canceled",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "approval_denied",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "interrupted_worker_stopped",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "interrupted",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "worker_stopped",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "interrupted_lease_expired",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "interrupted",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "lease_expired",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "unknown_ownership_lost",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "unknown",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "ownership_lost",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "unknown_lease_expired",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "unknown",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "lease_expired",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "max_sequence_microseconds",
+    "expected": true,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00.123456Z",
+      "sequence": 2147483647,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "zero_sequence",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 0,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "sequence_overflow",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 2147483648,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "bool_sequence",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": true,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "uppercase_uuid",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "A0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "offset_timestamp",
+    "expected": true,
+    "note": "Corrected from the original consumer fixture: the clarified contract accepts UTC +00:00 as well as Z.",
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00+00:00",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "seven_fractional_digits",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00.1234567Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "missing_context",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {},
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "unknown_reason",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "custom_reason",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "mismatched_reason",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "started",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "completed_nonzero",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 3
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "completed_null",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": null
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "completed_bool",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": false
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "long_template",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "colon_template",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "task:one",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "exit_overflow",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 4294967296
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "relative_ref",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "relative.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "unc_ref",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "\\\\server\\share\\event.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "traversal_ref",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\a\\..\\b.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "stream_ref",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\a.log:stream"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "control_ref",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\bad\n.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "too_many_refs",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log",
+        "C:\\synthetic\\a.log"
+      ],
+      "result_refs": []
+    }
+  },
+  {
+    "name": "extra_envelope_field",
+    "expected": false,
+    "event": {
+      "schema_version": 1,
+      "event_id": "a0000000-0000-4000-8000-000000000001",
+      "source": "arbitrium",
+      "instance_id": "a0000000-0000-4000-8000-000000000002",
+      "job_id": "a0000000-0000-4000-8000-000000000003",
+      "run_id": "a0000000-0000-4000-8000-000000000004",
+      "status": "completed",
+      "observed_at": "2026-10-05T12:00:00Z",
+      "sequence": 3,
+      "context": {
+        "template_id": "synthetic-v1",
+        "reason_code": "exit_zero",
+        "exit_code": 0
+      },
+      "log_refs": [
+        "C:\\synthetic\\never-open.log"
+      ],
+      "result_refs": [],
+      "unexpected": "rejected"
+    }
+  }
+]
