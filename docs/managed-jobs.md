@@ -2,9 +2,10 @@
 
 This milestone adds a local Python API alongside the existing four session MCP
 tools. Managed jobs and producer events require Windows 10 or newer. It does not register tasks, install services, enable persistent access,
-configure another product, or expose a new remote execution tool. No production
-approval provider or approved production templates ship with it. The scheduled
-CLI entry point always refuses execution (exit code 3), before opening any files.
+configure another product, or expose a new remote execution tool. A persistent
+catalog and durable grant provider are implemented, but no live catalog, grant or
+approved production template ships with the code. The CLI denies unconfigured or
+unauthorized execution (exit code 3); task registration remains disabled.
 
 ## Sessions remain stateful
 
@@ -41,11 +42,65 @@ for preventing concurrent modification of trusted files.
 `Runner(registry, templates)` denies execution by default. An embedding application
 must supply an `authorize(job, run_id)` callback returning exactly `True` only for
 an exact action-time approval and a `resolve_environment(env_ref)` callback returning
-a minimal environment. No production implementation of either is provided. There
-is no command-line `--approve`, environment-variable bypass or approval inferred
-from an event. Test callbacks approve only harmless temporary fixture programs.
+a minimal environment. The supported persistent implementations are `Catalog`
+and `ApprovalStore`, described below. There is no command-line `--approve`,
+environment-variable bypass or approval inferred from an event. Test callbacks
+issue grants only for harmless temporary fixture programs.
 Environment values are held in memory, never persisted, logged or emitted. Supply
 needed OS variables explicitly; the parent process environment is not copied.
+
+### Persistent catalog and environment resolver
+
+`Catalog.create(registry.root / 'catalog.json', templates, environment_refs)` is
+a trusted local construction API; it refuses to overwrite an existing catalog.
+The data-only file contains exact `Template` definitions, pinned digests and named
+environment references. It is limited to 256 KiB, 64 templates and 64 profiles.
+No Python module path, callback, shell expression or environment value is loaded
+from this file. Duplicate JSON keys and unknown fields are rejected.
+
+An environment profile maps each approved target variable name to exactly one
+source process-environment variable name, for example `SystemRoot` to `SystemRoot`.
+Resolution reads only those named variables into memory. Missing references deny
+execution. There is no environment dump, literal secret field, fallback to all
+environment variables or automatic credential discovery. Reference definitions are
+pinned by the catalog digest; secret values can rotate without being persisted.
+
+`Catalog.load(...)` reconstructs immutable templates and validates the selected
+job and current reviewed files before authorization. Catalog and registry storage
+must be owned/protected by the approved operating account. These are local trust
+boundaries, not tamper-proof storage against another process with write access.
+
+### Exact grants, including bounded recurring schedules
+
+`ApprovalStore(registry, catalog).issue(GrantRequest(...), authorize=reviewer)` is
+the only grant-issuance API. It denies by default. A trusted reviewer must approve
+the exact request; there is no grant-creation CLI or MCP tool. The request names
+the saved job, ordinary user SID, approval reference, runner interpreter/cwd and
+a `ScheduleScope`. Issuance and consumption reject elevated tokens. No token is
+impersonated and no privilege is enabled.
+
+The grant binds the immutable job/template digest, entire catalog digest, process
+account, registry path, interpreter bytes, Arbitrium Python source bytes, runner
+cwd and schedule. Code/catalog changes require a fresh explicit grant; do not
+modify a grant record to make old approval fit new code. Standard-library and
+other dependencies still require deployment review. Grant IDs are identifiers,
+not standalone bearer credentials.
+
+A scope contains a UUID schedule_id, explicit UTC start, finite occurrence count,
+optional fixed interval and start grace. One-shot count is one with no interval.
+Recurring counts are 2–10,000, intervals 60 seconds–31 days, and the whole scope is
+at most 366 days. Start grace is 1–300 seconds and must be less than the interval.
+There are no overlapping windows or late catch-up executions.
+
+One reviewed grant authorizes the entire bounded recurrence; a new manual grant
+is **not** required for each occurrence. On each invocation Windows Task Scheduler
+is responsible for timing. The provider only checks the matching occurrence window
+and atomically records `(grant_id, occurrence, run_id)` once in SQLite. It does not
+run timers or form a second scheduler. Concurrent invocations, restart and replay
+cannot reuse a claim. Claims are never refunded after crashes or launch failures.
+The existing unknown-run hold blocks subsequent occurrences in that job scope.
+`revoke(grant_id)` prevents future claims; cancel an already authorized run with
+`registry.cancel(run_id)`. Revocation is not retroactive cancellation.
 
 The runner executes an explicit executable and Windows-quoted argv without a shell.
 Standard input and stdout/stderr use the null device. The registry is the structured lifecycle log;
@@ -194,10 +249,14 @@ IgnoreNew and a bounded execution time. There are no credentials, logon/boot
 triggers, elevation or second scheduler backend.
 
 The Exec action invokes `python -I -m arbitrium.jobs_cli run --registry <root>
---job-id <UUID>`. Isolated Python requires the reviewed package to be installed in
+--job-id <UUID>`, adding `--grant-id <UUID>` only for a grant-bound definition.
+Isolated Python requires the reviewed package to be installed in
 that exact interpreter; it ignores PYTHONPATH and cwd imports. Arguments are quoted
-for Windows, not concatenated shell commands. The CLI refuses execution even if
-someone separately enables the generated task. `register()` always raises.
+for Windows, not concatenated shell commands. Without a valid grant the CLI refuses
+execution even if someone separately enables the generated task. With a grant,
+the adapter verifies the exact account, interpreter/cwd, code/catalog and start.
+A bounded recurring grant emits a matching Repetition and EndBoundary. All generated
+tasks and triggers remain disabled and `register()` always raises.
 
 `validate()` parses XML and compares its structure to the exact generated disabled
 profile, rejecting changed actions, extra elements, privilege changes or enablement.
@@ -207,23 +266,23 @@ and [Exec action](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasks
 
 ## Deployment gates
 
-### What works now and the minimum next milestone
+### What works now and remaining operational steps
 
-With a reviewed in-memory template mapping and fixture-only approval/environment
-callbacks, the local API already runs a saved harmless job through containment,
+With a reviewed catalog and fixture-only operational grants, the local API and
+fresh-process CLI run a saved harmless job through containment,
 durable status, cancellation/recovery, outbox publication to an approved temporary
 inbox and disabled task-definition generation. Tests exercise this complete local
 path, including abrupt worker death and descendant termination. There is no
 automatic execution retry. Exactly-once external side effects are not promised.
 
-Real scheduled execution still needs a trusted persistent template catalog and
-environment resolver, a production action-time approval provider, and CLI wiring
-to those components. The minimum provider should consume an expiring single-use
-grant bound to the exact job ID, template digest, principal and scheduled occurrence
-in a durable transaction. Absence, replay or mismatch must deny execution. Test
-the complete scheduled entry point with temporary catalogs/grants before enabling
-any real command. No arbitrary template/module path or general approval flag should
-be exposed through the CLI. Task registration remains disabled in this milestone.
+The catalog, resolver, durable provider and CLI integration are implemented and
+tested with temporary fixtures, including single-use and bounded recurring grants.
+Fresh-process tests use an isolated Python bootstrap to the source checkout; they
+do not install a package or register a Windows task. Real operation still requires
+the exact installed interpreter/package, user-owned registry/catalog, approved
+environment references, actual job/schedule review, and explicit operational grant.
+Windows service acceptance and a controlled scheduled trial remain deployment
+steps. Task registration remains disabled in this milestone.
 
 Metadata-only logging is a usable safe default and needs no output-capture policy
 decision now. Capturing application stdout/stderr later requires a separately

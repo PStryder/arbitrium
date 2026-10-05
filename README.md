@@ -92,8 +92,10 @@ A separate local managed-job API now provides durable jobs/runs, approved templa
 validation, cancellation requests, conservative recovery, and a transactional event
 outbox. Windows Task Scheduler support generates and validates disabled task XML
 without registering it. Production execution, publication and task installation
-remain gated; the saved-job CLI refuses execution until a reviewed approval
-provider is implemented. The existing four session MCP tools remain available.
+remain gated. The saved-job CLI requires a pinned local catalog and a matching
+operational grant; no live grants ship with the code. A grant can cover a bounded
+recurring schedule, consuming each occurrence once. The existing four session MCP
+tools remain available.
 
 See [managed job usage and deployment boundaries](docs/managed-jobs.md) and the
 [version 1 event schema](docs/job-events-v1.schema.json).

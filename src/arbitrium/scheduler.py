@@ -18,10 +18,11 @@ class TaskDefinition:
     working_directory: str
     start_at: str
     user_id: str
+    grant_id: str | None = None
 
 
 class WindowsTaskScheduler:
-    """Generate only disabled, least-privilege, interactive-token one-shot tasks.
+    """Generate only disabled, least-privilege, interactive-token tasks.
 
     Approval to save a template is not approval to run it or register a task.
     Validation checks our narrow generated profile, not the complete Windows XSD.
@@ -54,6 +55,20 @@ class WindowsTaskScheduler:
         start = datetime.fromisoformat(definition.start_at.replace("Z", "+00:00"))
         if start.tzinfo is None:
             raise ValueError("Start timestamp must include a timezone")
+        scope = None
+        if definition.grant_id is not None:
+            from .approvals import ApprovalStore, ScheduleScope, parse_utc, runtime_scope
+            from .catalog import Catalog
+            import json
+            catalog = Catalog.load(self.registry.root / "catalog.json")
+            catalog.validate_job(job)
+            grant = ApprovalStore(self.registry, catalog, initialize=False).describe(definition.grant_id)
+            scope = ScheduleScope(**json.loads(grant["scope"]))
+            scope.validate()
+            if grant["revoked_at"] or grant["job_id"] != definition.job_id or grant["principal_sid"] != definition.user_id or grant["catalog_digest"] != catalog.digest or grant["template_digest"] != job["template_digest"] or start != parse_utc(scope.start_at):
+                raise ValueError("Task does not match the exact granted schedule")
+            if json.loads(grant["runtime"]) != runtime_scope(definition.python_executable, definition.working_directory, self.registry.root):
+                raise ValueError("Task runtime differs from approval")
         task = ET.Element(f"{{{NS}}}Task", {"version": "1.3"})
 
         def child(parent, tag, text=None, **attrs):
@@ -65,6 +80,13 @@ class WindowsTaskScheduler:
         trigger = child(triggers, "TimeTrigger")
         child(trigger, "Enabled", "false")
         child(trigger, "StartBoundary", start.isoformat())
+        if scope is not None:
+            child(trigger, "EndBoundary", scope.end_at.isoformat())
+            if scope.occurrences > 1:
+                repetition = child(trigger, "Repetition")
+                child(repetition, "Interval", f"PT{scope.interval_seconds}S")
+                child(repetition, "Duration", f"PT{scope.duration_seconds}S")
+                child(repetition, "StopAtDurationEnd", "false")
         principals = child(task, "Principals")
         principal = child(principals, "Principal", id="ArbitriumUser")
         child(principal, "UserId", definition.user_id)
@@ -80,7 +102,10 @@ class WindowsTaskScheduler:
         child(action, "Command", definition.python_executable)
         # Isolated Python ignores PYTHONPATH and the working directory for imports.
         # Deployment must install the reviewed package into this exact interpreter.
-        child(action, "Arguments", subprocess.list2cmdline(["-I", "-m", "arbitrium.jobs_cli", "run", "--registry", str(self.registry.root), "--job-id", definition.job_id]))
+        arguments = ["-I", "-m", "arbitrium.jobs_cli", "run", "--registry", str(self.registry.root), "--job-id", definition.job_id]
+        if definition.grant_id:
+            arguments += ["--grant-id", definition.grant_id]
+        child(action, "Arguments", subprocess.list2cmdline(arguments))
         child(action, "WorkingDirectory", definition.working_directory)
         return ET.tostring(task, encoding="unicode", xml_declaration=True)
 
@@ -101,7 +126,8 @@ class WindowsTaskScheduler:
         xml = self.generate(definition)
         self.validate(xml, definition)
         return {"adapter": "windows-task-scheduler", "job_id": definition.job_id,
-                "registered": False, "enabled": False, "execution_available": False, "xml": xml}
+                "registered": False, "enabled": False, "execution_available": False,
+                "grant_bound": definition.grant_id is not None, "xml": xml}
 
     def register(self, *args, **kwargs):
         raise PermissionError("Task registration is disabled; exact action-time approval and deployment review are required")
