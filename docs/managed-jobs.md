@@ -271,6 +271,15 @@ and [Exec action](https://learn.microsoft.com/en-us/windows/win32/taskschd/tasks
 
 ### What works now and remaining operational steps
 
+For native Windows task imports, persist `adapter.serialize(definition)` with
+`Path.write_bytes()`. It returns a validated disabled definition with explicit
+UTF-16LE bytes, a BOM and a matching UTF-16 declaration. `generate()` returns text
+for inspection, not a file encoding. A controlled registration attempt rejected
+the earlier UTF-8-declared file with "unable to switch the encoding". Regression
+tests verify actual bytes and non-ASCII paths; they do not establish native Windows
+service acceptance. `serialize_task_xml()` is also available for an independently
+reviewed manual registration variant, but does not validate or authorize it.
+
 With a reviewed catalog and fixture-only operational grants, the local API and
 fresh-process CLI run a saved harmless job through containment,
 durable status, cancellation/recovery, outbox publication to an approved temporary

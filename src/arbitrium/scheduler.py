@@ -1,5 +1,6 @@
 """Windows Task Scheduler definition adapter; no registration API."""
 import subprocess
+import codecs
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
@@ -9,6 +10,20 @@ from .jobs import Registry, Template, bounded, uuid_id
 
 NS = "http://schemas.microsoft.com/windows/2004/02/mit/task"
 ET.register_namespace("", NS)
+
+
+def serialize_task_xml(xml: str) -> bytes:
+    """Encode reviewed XML for native Windows import, never locale text output.
+
+    schtasks rejected our UTF-8 text declaration on this host. Keep the BOM,
+    declaration and payload consistent using explicit UTF-16LE bytes. This is
+    serialization only, not profile validation or permission to register a task.
+    """
+    if not isinstance(xml, str) or len(xml.encode()) > 16384 or "<!" in xml:
+        raise ValueError("Invalid task XML")
+    root = ET.fromstring(xml)
+    text = '<?xml version="1.0" encoding="UTF-16"?>\n' + ET.tostring(root, encoding="unicode")
+    return codecs.BOM_UTF16_LE + text.encode("utf-16-le")
 
 
 @dataclass(frozen=True)
@@ -107,7 +122,8 @@ class WindowsTaskScheduler:
             arguments += ["--grant-id", definition.grant_id]
         child(action, "Arguments", subprocess.list2cmdline(arguments))
         child(action, "WorkingDirectory", definition.working_directory)
-        return ET.tostring(task, encoding="unicode", xml_declaration=True)
+        # A string has no byte encoding. Use serialize() for an importable file.
+        return ET.tostring(task, encoding="unicode", xml_declaration=False)
 
     def validate(self, xml: str, definition: TaskDefinition):
         if not isinstance(xml, str) or len(xml.encode()) > 16384 or "<!" in xml:
@@ -121,6 +137,12 @@ class WindowsTaskScheduler:
         if structure(actual) != structure(expected):
             raise ValueError("Task differs from approved disabled profile")
         return True
+
+    def serialize(self, definition: TaskDefinition) -> bytes:
+        """Validated disabled definition; persist with Path.write_bytes()."""
+        xml = self.generate(definition)
+        self.validate(xml, definition)
+        return serialize_task_xml(xml)
 
     def dry_run(self, definition: TaskDefinition):
         xml = self.generate(definition)

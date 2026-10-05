@@ -295,6 +295,34 @@ def test_scheduler_requires_ordinary_sid_and_timezone(setup_job):
         scheduler.generate(dataclasses.replace(definition, user_id="S-1-5-21-111-222-333-1001"))
 
 
+def test_scheduler_file_bytes_have_windows_utf16_bom_and_matching_declaration(setup_job, tmp_path):
+    import codecs
+    import xml.etree.ElementTree as ET
+    from arbitrium.scheduler import NS, serialize_task_xml
+    registry, template = setup_job
+    directory = tmp_path / "unicode-\u0142\u03c0"
+    directory.mkdir()
+    definition = TaskDefinition(registry.save(template, ["ok"]), sys.executable,
+                                str(directory), "2030-01-01T12:00:00+00:00", "S-1-5-21-111-222-333-1001")
+    scheduler = WindowsTaskScheduler(registry, {template.template_id: template})
+    payload = scheduler.serialize(definition)
+    target = tmp_path / "task.xml"
+    target.write_bytes(payload)
+    actual = target.read_bytes()
+    assert actual.startswith(codecs.BOM_UTF16_LE)
+    assert actual.decode("utf-16").startswith('<?xml version="1.0" encoding="UTF-16"?>')
+    assert 'encoding="UTF-8"' not in actual.decode("utf-16")
+    root = ET.fromstring(actual)
+    assert root.find(f"{{{NS}}}Actions/{{{NS}}}Exec/{{{NS}}}WorkingDirectory").text == str(directory)
+    assert all(node.text == "false" for node in root.findall(f".//{{{NS}}}Enabled"))
+    assert scheduler.validate(actual.decode("utf-16"), definition)
+    # Even a pre-existing UTF-8 declaration is replaced, never double-encoded.
+    utf8_text = ET.tostring(root, encoding="unicode", xml_declaration=True)
+    assert serialize_task_xml(utf8_text) == actual
+    with pytest.raises(ValueError):
+        serialize_task_xml('<!DOCTYPE Task><Task/>')
+
+
 def test_canonical_fixture_matches_runtime_and_schema():
     docs = Path(__file__).resolve().parents[1] / "docs"
     event = json.loads((docs / "job-event-v1.example.json").read_text())
