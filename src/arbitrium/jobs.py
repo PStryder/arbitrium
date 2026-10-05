@@ -361,13 +361,15 @@ class Publisher:
         self.inbox = Path(inbox).resolve()
         self.authorize = authorize
 
-    def publish(self, limit=100):
+    def publish(self, limit=100, *, event_id=None):
         if self.authorize is None or self.authorize(self.inbox) is not True:
             raise PermissionError("Inbox publication requires action-time approval")
         if not self.inbox.is_dir():
             raise ValueError("Inbox must already exist")
         if type(limit) is not int or not 1 <= limit <= 1000:
             raise ValueError("Invalid batch bound")
+        if event_id is not None:
+            uuid_id(event_id)
         delivered = 0
         # Serialize publishers using SQLite so conflicting content is never overwritten.
         with self.registry.connection() as db:
@@ -379,7 +381,10 @@ class Publisher:
             for stale in self.inbox.glob(prefix + "*.tmp"):
                 if pattern.fullmatch(stale.name) and stale.is_file() and not stale.is_symlink():
                     stale.unlink()
-            rows = db.execute("SELECT * FROM outbox WHERE delivered_at IS NULL ORDER BY created_at,event_id LIMIT ?", (limit,)).fetchall()
+            if event_id is None:
+                rows = db.execute("SELECT * FROM outbox WHERE delivered_at IS NULL ORDER BY created_at,event_id LIMIT ?", (limit,)).fetchall()
+            else:
+                rows = db.execute("SELECT * FROM outbox WHERE delivered_at IS NULL AND event_id=? LIMIT 1", (event_id,)).fetchall()
             for row in rows:
                 event = json.loads(row["body"])
                 validate_event(event)

@@ -231,7 +231,10 @@ Unknown version, invalid content and unsafe references must not trigger actions.
 The producer keeps at most 1000 delivered outbox rows, retains all undelivered rows,
 and applies conservative admission backpressure at 10,000 pending/reserved event
 slots (configurable in local code). Active runs reserve room for terminal events.
-Publication batches are bounded to 1000, default 100. Orphan temporary files with
+Publication batches are bounded to 1000, default 100. An exact event ID can be
+selected with `publish(limit=1, event_id=...)` for a
+separately approved single-event test; all other lifecycle events remain pending.
+Orphan temporary files with
 this instance's exact generated naming pattern are removed under the publisher
 lock. Other producers' files are untouched. Job/run history remains durable until
 an explicit future archive policy; there is no silent history purge. Inbox growth

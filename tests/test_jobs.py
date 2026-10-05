@@ -202,6 +202,20 @@ def test_outbox_atomic_retry_dedup_and_failure(setup_job, tmp_path):
     assert not list(inbox.glob("*.tmp"))
 
 
+def test_exact_event_publication_leaves_other_lifecycle_events_pending(setup_job, tmp_path):
+    registry, template = setup_job
+    runner(registry, template).execute(registry.save(template, ["ok"]))
+    selected = next(event for event in events(registry) if event["status"] == "completed")
+    inbox = tmp_path / "one-event-inbox"
+    inbox.mkdir()
+    publisher = Publisher(registry, inbox, authorize=lambda destination: destination == inbox)
+    assert publisher.publish(limit=1, event_id=selected["event_id"]) == 1
+    assert publisher.publish(limit=1, event_id=selected["event_id"]) == 0
+    assert [path.name for path in inbox.iterdir()] == [selected["event_id"] + ".json"]
+    with registry.connection() as db:
+        assert db.execute("SELECT count(*) FROM outbox WHERE delivered_at IS NULL").fetchone()[0] == 2
+
+
 def test_publish_denied_collision_and_retention_bound(setup_job, tmp_path):
     registry, template = setup_job
     registry.reserve(registry.save(template, ["ok"]), str(uuid.uuid4()))
