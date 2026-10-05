@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "event_id": "00000000-0000-4000-8000-000000000001",
+  "source": "arbitrium",
+  "instance_id": "00000000-0000-4000-8000-000000000002",
+  "job_id": "00000000-0000-4000-8000-000000000003",
+  "run_id": "00000000-0000-4000-8000-000000000004",
+  "status": "completed",
+  "observed_at": "2026-10-05T12:00:00Z",
+  "sequence": 3,
+  "context": {
+    "template_id": "synthetic-fixture-v1",
+    "reason_code": "exit_zero",
+    "exit_code": 0
+  },
+  "log_refs": ["F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"],
+  "result_refs": []
+}

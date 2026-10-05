@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:arbitrium:job-events:1",
+  "title": "Arbitrium job lifecycle event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "event_id", "source", "instance_id", "job_id", "run_id", "status", "observed_at", "sequence", "context", "log_refs", "result_refs"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "event_id": {"$ref": "#/$defs/uuid"},
+    "source": {"const": "arbitrium"},
+    "instance_id": {"$ref": "#/$defs/uuid"},
+    "job_id": {"$ref": "#/$defs/uuid"},
+    "run_id": {"$ref": "#/$defs/uuid"},
+    "status": {"enum": ["queued", "running", "completed", "failed", "canceled", "interrupted", "unknown"]},
+    "observed_at": {"type": "string", "format": "date-time", "pattern": "Z$", "maxLength": 32},
+    "sequence": {"type": "integer", "minimum": 1, "maximum": 2147483647},
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["template_id", "reason_code", "exit_code"],
+      "properties": {
+        "template_id": {"type": "string", "pattern": "^[a-zA-Z0-9_.-]{1,80}$"},
+        "reason_code": {"enum": ["queued", "started", "exit_zero", "exit_nonzero", "cancel_requested", "deadline", "launch_failed", "worker_stopped", "ownership_lost", "lease_expired", "approval_denied"]},
+        "exit_code": {"type": ["integer", "null"], "minimum": -2147483648, "maximum": 4294967295}
+      }
+    },
+    "log_refs": {"$ref": "#/$defs/refs"},
+    "result_refs": {"$ref": "#/$defs/refs"}
+  },
+  "$defs": {
+    "uuid": {"type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},
+    "refs": {
+      "type": "array", "maxItems": 8,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[^\\u0000-\\u001f]+$"}
+    }
+  }
+}
