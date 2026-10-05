@@ -70,11 +70,11 @@ Or manually in `~/.claude.json`:
 Agent: arbitrium_spawn(shell="bash", cwd="/my/project")
   -> session_id: "shell-a1b2c3"
 
-Agent: arbitrium_exec(session_id="shell-a1b2c3", command="export API_KEY=test123")
+Agent: arbitrium_exec(session_id="shell-a1b2c3", command="export DEMO_STATE=ready")
   -> ok, exit_code: 0
 
-Agent: arbitrium_exec(session_id="shell-a1b2c3", command="echo $API_KEY")
-  -> output: "test123", exit_code: 0    # state persisted!
+Agent: arbitrium_exec(session_id="shell-a1b2c3", command="echo $DEMO_STATE")
+  -> output: "ready", exit_code: 0    # state persisted!
 
 Agent: arbitrium_exec(session_id="shell-a1b2c3", command="cd src && ls")
   -> output: "main.py  utils.py", exit_code: 0

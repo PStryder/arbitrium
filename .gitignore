@@ -5,3 +5,24 @@ dist/
 build/
 .venv/
 logs/
+
+# Local credentials and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.agents/
+.codex/
+
+# Disposable test, runtime and deployment state
+.pytest_cache/
+.coverage
+htmlcov/
+state/
+smoke-state/
+arbitrium-deployment/
+*.sqlite3
+*.sqlite3-*

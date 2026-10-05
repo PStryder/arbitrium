@@ -13,6 +13,6 @@
     "reason_code": "exit_zero",
     "exit_code": 0
   },
-  "log_refs": ["F:\\HexyLab\\Arbitrium\\state\\jobs.sqlite3"],
+  "log_refs": ["C:\\Example\\Arbitrium\\state\\jobs.sqlite3"],
   "result_refs": []
 }

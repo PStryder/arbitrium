@@ -204,7 +204,8 @@ instructions, permission to execute, or permission to open another resource.
 
 ### Publication, retry and acknowledgment
 
-The eventual flat inbox is `C:\Users\pstry\ExpergisSignals\job-events`.
+An illustrative flat inbox is `C:\Example\Signals\job-events`; choose an
+explicitly approved local destination for each deployment.
 No production default points there. `Publisher(registry, inbox, authorize=...)`
 requires exact destination approval on every `publish()` call and an already
 existing directory. Tests use only a temporary fake inbox.
@@ -313,7 +314,7 @@ Before operational use, obtain exact approval for reviewed templates and assets,
 environment-reference resolution, execution approval provider, runtime installation,
 registry/log permissions, output policy, platform containment compatibility, inbox
 publication destination, and each task registration/enablement. Validate the final
-task with Windows after approval. Verify paths in Peter's ordinary terminal; a
+task with Windows after approval. Verify paths in the operator's ordinary terminal; a
 worker-visible AppData path may be packaged-app redirected. Coordinate the consumer
 separately with Expergis. No real jobs, production events, service installation,
 credentials, shared configuration changes or Git push are part of this milestone.
