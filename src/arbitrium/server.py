@@ -49,8 +49,7 @@ def _create_server() -> Server:
                         },
                         "shell": {
                             "type": "string",
-                            "description": "Shell to use (default: bash). Examples: bash, cmd, powershell.",
-                            "default": "bash",
+                            "description": "Shell to use (default: platform auto-detection). Examples: bash, cmd, powershell.",
                         },
                         "cwd": {
                             "type": "string",
@@ -147,7 +146,7 @@ async def _handle_spawn(args: dict) -> list[TextContent]:
 
     try:
         await session.start()
-    except (OSError, FileNotFoundError) as e:
+    except (OSError, ValueError) as e:
         return [TextContent(type="text", text=json.dumps({
             "status": "error",
             "error": f"Failed to start shell: {e}",

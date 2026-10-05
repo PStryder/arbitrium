@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import os
+import re
 import shutil
 import sys
 import uuid
@@ -91,6 +92,10 @@ class ShellSession:
         self.last_command: str | None = None
         self._log_file = None
         self._lock = asyncio.Lock()
+        self._tainted = False
+        self._cmd_prompt = "__ARBITRIUM_PROMPT_" + uuid.uuid4().hex + "__"
+        name = Path(self.shell).stem.lower()
+        self._kind = "powershell" if name in {"pwsh", "powershell"} else "cmd" if name == "cmd" else "posix"
 
     async def start(self) -> None:
         """Spawn the shell subprocess."""
@@ -101,20 +106,29 @@ class ShellSession:
         # Remove CLAUDECODE env var so nested claude calls don't fail
         shell_env.pop("CLAUDECODE", None)
 
-        self.process = await asyncio.create_subprocess_exec(
-            self.shell,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,  # merge stderr into stdout
-            cwd=self.cwd,
-            env=shell_env,
-        )
-
-        # Set up log file
+        if not re.fullmatch(r"[A-Za-z0-9_-]{1,80}", self.session_id):
+            raise ValueError("Invalid session ID")
+        flags = {"posix": [], "powershell": ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "-"], "cmd": ["/D", "/Q"]}[self._kind]
+        if self._kind == "cmd":
+            shell_env["PROMPT"] = self._cmd_prompt
+        # Establish logging before spawning so a denied log path cannot orphan a shell.
         LOGS_DIR.mkdir(parents=True, exist_ok=True)
         timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         log_path = LOGS_DIR / f"{self.session_id}_{timestamp}.log"
         self._log_file = open(log_path, "a", encoding="utf-8")
+        try:
+            self.process = await asyncio.create_subprocess_exec(
+                self.shell, *flags,
+                stdin=asyncio.subprocess.PIPE,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT,
+                cwd=self.cwd,
+                env=shell_env,
+            )
+        except BaseException:
+            self._log_file.close()
+            self._log_file = None
+            raise
         self._log(f"Session started: shell={self.shell}, cwd={self.cwd}")
 
         logger.info(f"Shell session '{self.session_id}' started (PID {self.process.pid})")
@@ -151,9 +165,18 @@ class ShellSession:
             return {"status": "error", "error": "Shell session is not running"}
 
         # Auto-fix PowerShell quoting to prevent bash $ expansion
-        command = self._fix_powershell_quoting(command)
+        if type(timeout_ms) is not int or not 1 <= timeout_ms <= 86400000:
+            return {"status": "error", "error": "timeout_ms must be between 1 and 86400000"}
+        if not isinstance(command, str):
+            return {"status": "error", "error": "command must be a string"}
+        if self._kind == "posix":
+            command = self._fix_powershell_quoting(command)
 
         async with self._lock:
+            if self._tainted:
+                return {"status": "error", "error": "Session stream is uncertain after timeout or interrupted execution; close and respawn"}
+            if not self.alive:
+                return {"status": "error", "error": "Shell session is not running"}
             sentinel = f"{_SENTINEL_PREFIX}{uuid.uuid4().hex[:8]}"
 
             # Write command + sentinel echo to stdin
@@ -167,22 +190,30 @@ class ShellSession:
             # Fix: `: _` on its own line before the command resets $_ to "_".
             # Bash parses each line separately, so by the time it parses the
             # user's command, $_ is already clean. Same after the sentinel.
-            cmd_line = f": _\n{command}\necho $?:{sentinel}\n: _\n"
-            self.process.stdin.write(cmd_line.encode())
-            await self.process.stdin.drain()
-
-            self._log(f"$ {command}")
-
+            begin = sentinel + "_BEGIN"
+            if self._kind == "cmd":
+                cmd_line = f"echo {begin}\n{command}\necho {sentinel}:%errorlevel%\n"
+            elif self._kind == "powershell":
+                cmd_line = (f"[Console]::WriteLine('{begin}'); $global:LASTEXITCODE = 0\n"
+                            f"{command}\n"
+                            f"$__arb_ok = $?; $__arb_rc = if ($__arb_ok) {{ 0 }} elseif ($LASTEXITCODE -ne 0) {{ $LASTEXITCODE }} else {{ 1 }}; [Console]::WriteLine('{sentinel}:' + $__arb_rc)\n")
+            else:
+                cmd_line = f"printf '%s\\n' '{begin}'\n: _\n{command}\nprintf '{sentinel}:%s\\n' \"$?\"\n: _\n"
             # Read output until sentinel appears
             output_lines: list[str] = []
             exit_code: int | None = None
             timeout_sec = timeout_ms / 1000.0
+            deadline = asyncio.get_running_loop().time() + timeout_sec
+            started = False
 
             try:
+                self.process.stdin.write(cmd_line.encode())
+                await asyncio.wait_for(self.process.stdin.drain(), timeout=timeout_sec)
+                self._log(f"$ {command}")
                 while True:
                     line_bytes = await asyncio.wait_for(
                         self.process.stdout.readline(),
-                        timeout=timeout_sec,
+                        timeout=max(0, deadline - asyncio.get_running_loop().time()),
                     )
 
                     if not line_bytes:
@@ -190,19 +221,27 @@ class ShellSession:
                         break
 
                     line = line_bytes.decode("utf-8", errors="replace").rstrip("\n").rstrip("\r")
-
-                    if sentinel in line:
-                        # Extract exit code from "exitcode:sentinel" format
-                        prefix = line.split(sentinel)[0].rstrip(":")
-                        try:
-                            exit_code = int(prefix)
-                        except ValueError:
-                            exit_code = None
+                    if self._kind == "cmd":
+                        if line.startswith(self._cmd_prompt):
+                            line = line[len(self._cmd_prompt):]
+                            # cmd emits one extra CRLF before every prompt.
+                            if output_lines and output_lines[-1] == "":
+                                output_lines.pop()
+                    if not started:
+                        if line.endswith(begin):
+                            started = True
+                        continue
+                    match = re.search(re.escape(sentinel) + r":(-?\d+)$", line)
+                    if match:
+                        if match.start():
+                            output_lines.append(line[:match.start()])
+                        exit_code = int(match.group(1))
                         break
 
                     output_lines.append(line)
 
             except asyncio.TimeoutError:
+                self._tainted = True
                 output = "\n".join(output_lines)
                 self._log(f"[TIMEOUT after {timeout_ms}ms]\n{output}")
                 self.command_count += 1
@@ -212,7 +251,14 @@ class ShellSession:
                     "output": output,
                     "timeout_ms": timeout_ms,
                     "command": command,
+                    "requires_close": True,
                 }
+            except asyncio.CancelledError:
+                self._tainted = True
+                raise
+            except (ValueError, OSError):
+                self._tainted = True
+                return {"status": "error", "error": "Shell stream failed; close and respawn", "requires_close": True}
 
             output = "\n".join(output_lines)
             self._log(f"{output}\n[exit: {exit_code}]")
@@ -221,7 +267,7 @@ class ShellSession:
             self.last_command = command
 
             return {
-                "status": "ok",
+                "status": "ok" if exit_code is not None else "error",
                 "output": output,
                 "exit_code": exit_code,
                 "command": command,
@@ -234,7 +280,10 @@ class ShellSession:
     async def close(self) -> None:
         """Terminate the shell session."""
         if self.process and self.process.returncode is None:
-            self.process.stdin.write(b"exit\n")
+            try:
+                self.process.stdin.write(b"exit\n")
+            except (BrokenPipeError, ConnectionResetError):
+                pass
             try:
                 await asyncio.wait_for(self.process.wait(), timeout=5)
             except asyncio.TimeoutError:
@@ -266,4 +315,5 @@ class ShellSession:
             "command_count": self.command_count,
             "last_command": self.last_command,
             "created_at": self.created_at,
+            "requires_close": self._tainted,
         }

@@ -104,7 +104,8 @@ class TestShellSessionIntegration:
         # or possibly an error. Let's check for expected behavior.
         # Actually, `exit 42` kills the bash process, causing EOF.
         # Let's use a command that sets exit code without killing shell:
-        pass
+        assert result["status"] == "error"
+        assert result["exit_code"] is None
 
     @pytest.mark.asyncio
     async def test_execute_nonzero_exit_code(self, session):
@@ -122,9 +123,11 @@ class TestShellSessionIntegration:
 
     @pytest.mark.asyncio
     async def test_execute_timeout(self, session):
-        result = await session.execute("sleep 60", timeout_ms=500)
+        result = await session.execute("sleep 0.3", timeout_ms=50)
         assert result["status"] == "timeout"
-        assert result["timeout_ms"] == 500
+        assert result["timeout_ms"] == 50
+        assert result["requires_close"] is True
+        assert (await session.execute("echo stale"))["status"] == "error"
 
     @pytest.mark.asyncio
     async def test_session_close(self, session):
